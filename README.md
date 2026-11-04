@@ -445,3 +445,15 @@ kind delete cluster --name multi-webapps
 GitHub: https://github.com/harisamjad0158/multi-webapps-kubernetes-ingress
 
 **Project focus:** Kubernetes orchestration, Docker image lifecycle, multi-application hosting, NGINX Ingress, Apache/NGINX web servers, deployment reliability, and Linux-based troubleshooting.
+
+
+<img width="445" height="236" alt="{7405E5F9-F9B0-480E-B541-24C26D6BE688}" src="https://github.com/user-attachments/assets/137fc5f6-cc30-45de-817b-8771db581ee5" />
+
+<img width="478" height="267" alt="{F9A383B6-4A90-42A4-9D8B-B6DE7E980A06}" src="https://github.com/user-attachments/assets/d013e2f9-1412-4d83-abb3-dfcdbc9e71fa" />
+
+<img width="513" height="265" alt="{0F9DF11E-0637-4021-8FDE-F1003D4D1BDE}" src="https://github.com/user-attachments/assets/3655b73f-7fe7-421e-9626-5e694186d045" />
+
+<img width="501" height="283" alt="{12914800-7328-4683-B4CD-FA544D8BBE6C}" src="https://github.com/user-attachments/assets/cfab23a1-d39d-4950-baa1-80ce8eb930ab" />
+
+
+
