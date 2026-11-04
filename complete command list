@@ -1,0 +1,683 @@
+# =====================================================================
+#          MULTI-WEBAPPS KUBERNETES INGRESS PROJECT
+#                   COMPLETE COMMAND CHEAT SHEET
+# =====================================================================
+#
+# PROJECT ARCHITECTURE
+#
+# Kind Cluster: multi-webapps
+# Nodes: 3 (1 Control Plane + 2 Workers)
+# Namespace: webapps
+# Applications: 4
+# Replicas: 2 per application
+# Total Application Pods: 8
+# Services: 4 ClusterIP Services
+# Ingress Controller: NGINX
+#
+# APPLICATION ROUTES:
+#
+# /ecom/      -> stateless-ecommerce
+# /shop/      -> online-shopping
+# /boutique/  -> desi-boutique
+# /pizza/     -> pizza
+#
+# =====================================================================
+# 1. CHECK REQUIRED TOOLS
+# =====================================================================
+
+docker --version
+# Check installed Docker version.
+
+kubectl version --client
+# Check Kubernetes CLI installation.
+
+kind version
+# Check Kind installation.
+
+helm version
+# Check Helm installation.
+
+docker info
+# Verify Docker Engine is running and accessible.
+
+
+# =====================================================================
+# 2. NAVIGATE TO PROJECT DIRECTORY
+# =====================================================================
+
+cd /home/adminx/Downloads/multi-webapps-k8s
+# Open the main Kubernetes project directory.
+
+ls -lah
+# Display Kubernetes YAML files and application directories.
+
+ls -lah apps/
+# Verify that all four application source directories exist.
+
+
+# =====================================================================
+# 3. CREATE KIND KUBERNETES CLUSTER
+# =====================================================================
+
+cat kind-config.yaml
+# Review the Kind cluster configuration before creating the cluster.
+
+kind create cluster \
+  --name multi-webapps \
+  --config kind-config.yaml
+# Create the multi-node Kubernetes cluster using the YAML configuration.
+
+kind get clusters
+# List all existing Kind clusters.
+
+kubectl config get-contexts
+# Display available Kubernetes contexts.
+
+kubectl config use-context kind-multi-webapps
+# Select the correct Kubernetes cluster.
+
+kubectl cluster-info
+# Display Kubernetes API server and cluster information.
+
+kubectl get nodes
+# Verify all three Kubernetes nodes are registered.
+
+kubectl get nodes -o wide
+# Display node IPs, operating systems, and Kubernetes versions.
+
+kubectl describe nodes
+# Inspect node capacity, conditions, and scheduling information.
+
+
+# =====================================================================
+# 4. BUILD DOCKER IMAGES
+# =====================================================================
+
+cd /home/adminx/Downloads/multi-webapps-k8s
+
+docker build \
+  -t stateless-ecommerce:1.0.2 \
+  ./apps/stateless-ecommerce
+# Build the NGINX-based eCommerce application image.
+
+docker build \
+  -t online-shopping-apache:1.0.4 \
+  ./apps/online_shopping_app
+# Build the Apache-based Online Shopping application image.
+
+docker build \
+  -t desi-boutique-apache:1.0.1 \
+  ./apps/desi-boutique-apache-k8s/desi-boutique
+# Build the Apache-based Desi Boutique application image.
+
+docker build \
+  -t pizza-apache:1.0.1 \
+  ./apps/pizza-apache-k8s
+# Build the Apache-based Pizza application image.
+
+docker images
+# Verify all four Docker images were created.
+
+docker image ls
+# Display local Docker image names, tags, and sizes.
+
+
+# =====================================================================
+# 5. LOAD DOCKER IMAGES INTO KIND
+# =====================================================================
+
+kind load docker-image \
+  stateless-ecommerce:1.0.2 \
+  --name multi-webapps
+# Load eCommerce image into the Kind cluster.
+
+kind load docker-image \
+  online-shopping-apache:1.0.4 \
+  --name multi-webapps
+# Load Online Shopping image into the cluster.
+
+kind load docker-image \
+  desi-boutique-apache:1.0.1 \
+  --name multi-webapps
+# Load Desi Boutique image into the cluster.
+
+kind load docker-image \
+  pizza-apache:1.0.1 \
+  --name multi-webapps
+# Load Pizza application image into the cluster.
+
+# WHY?
+# Kind runs Kubernetes nodes inside Docker containers.
+# Locally built Docker images must be loaded into Kind nodes
+# before Kubernetes can use them without pulling from a registry.
+
+
+# =====================================================================
+# 6. DEPLOY FOUR APPLICATIONS TO KUBERNETES
+# =====================================================================
+
+cd /home/adminx/Downloads/multi-webapps-k8s
+
+kubectl apply -f four-websites.yaml
+# Create or update the namespace, Deployments, and Services
+# defined in the project manifest.
+
+kubectl get namespaces
+# Verify the webapps namespace exists.
+
+kubectl get deployments -n webapps
+# Check the four application Deployments and replica counts.
+
+kubectl get pods -n webapps
+# Check all eight application Pods.
+
+kubectl get pods -n webapps -o wide
+# Display Pod IPs and the worker nodes hosting each Pod.
+
+kubectl get services -n webapps
+# Verify the four ClusterIP Services.
+
+kubectl get all -n webapps
+# Display common application resources in the namespace.
+
+kubectl describe deployment stateless-ecommerce -n webapps
+# Inspect replica status, container configuration, and events.
+
+kubectl get pods -n webapps --show-labels
+# Verify Pod labels used by Kubernetes Services.
+
+
+# =====================================================================
+# 7. VERIFY DEPLOYMENT ROLLOUT
+# =====================================================================
+
+kubectl rollout status deployment/stateless-ecommerce -n webapps
+# Wait for both eCommerce replicas to become ready.
+
+kubectl rollout status deployment/online-shopping -n webapps
+# Verify Online Shopping rollout.
+
+kubectl rollout status deployment/desi-boutique -n webapps
+# Verify Desi Boutique rollout.
+
+kubectl rollout status deployment/pizza -n webapps
+# Verify Pizza application rollout.
+
+kubectl get deployments -n webapps
+# Confirm each Deployment reports 2/2 ready replicas.
+
+
+# =====================================================================
+# 8. CHECK SERVICE ENDPOINTS
+# =====================================================================
+
+kubectl get endpoints -n webapps
+# Display legacy Endpoints information for Services.
+
+kubectl get endpointslices -n webapps
+# Display EndpointSlices containing backend Pod addresses.
+
+kubectl describe svc stateless-ecommerce -n webapps
+# Check Service selector, port, target port, and backend endpoints.
+
+kubectl describe svc online-shopping -n webapps
+# Check Online Shopping Service routing.
+
+kubectl describe svc desi-boutique -n webapps
+# Check Boutique Service routing.
+
+kubectl describe svc pizza -n webapps
+# Check Pizza Service routing.
+
+# WHY?
+# A Service routes traffic to matching Pods.
+# Incorrect labels or selectors can leave a Service
+# without ready backend endpoints.
+
+
+# =====================================================================
+# 9. INSTALL NGINX INGRESS CONTROLLER USING HELM
+# =====================================================================
+
+helm repo add ingress-nginx \
+  https://kubernetes.github.io/ingress-nginx
+# Register the NGINX Ingress Helm chart repository.
+
+helm repo update
+# Refresh Helm repository metadata.
+
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace \
+  --set controller.service.type=ClusterIP \
+  --wait \
+  --timeout 5m
+# Install or upgrade the NGINX Ingress Controller.
+# ClusterIP keeps the controller internal to the cluster.
+# --wait waits for resources to become ready.
+
+helm list -n ingress-nginx
+# Verify the Helm release exists.
+
+kubectl get pods -n ingress-nginx
+# Check the Ingress Controller Pod.
+
+kubectl get deployments -n ingress-nginx
+# Verify the controller Deployment is ready.
+
+kubectl get svc -n ingress-nginx
+# Display the Ingress Controller Service.
+
+kubectl get ingressclass
+# Verify that the nginx IngressClass exists.
+
+
+# =====================================================================
+# 10. CONFIGURE PATH-BASED INGRESS ROUTING
+# =====================================================================
+
+cd /home/adminx/Downloads/multi-webapps-k8s
+
+cat ingress.yaml
+# Review routing rules for the four web applications.
+
+kubectl apply -f ingress.yaml
+# Create or update the Ingress resource.
+
+kubectl get ingress -n webapps
+# Verify the Ingress resource exists.
+
+kubectl describe ingress multi-webapps-ingress -n webapps
+# Inspect routing rules, backend Services, and events.
+
+kubectl get ingress multi-webapps-ingress \
+  -n webapps -o yaml
+# Display the complete Ingress configuration.
+
+# ROUTING:
+#
+# http://localhost:88/ecom/      -> stateless-ecommerce
+# http://localhost:88/shop/      -> online-shopping
+# http://localhost:88/boutique/  -> desi-boutique
+# http://localhost:88/pizza/     -> pizza
+#
+# WHY?
+# NGINX Ingress uses HTTP URL paths to choose backend Services.
+# The Services then distribute requests to ready application Pods.
+#
+# IMPORTANT:
+# These applications were configured to serve under their prefixes.
+# Do not add a global rewrite-target annotation unnecessarily.
+
+
+# =====================================================================
+# 11. ACCESS THE APPLICATIONS THROUGH INGRESS
+# =====================================================================
+
+kubectl port-forward \
+  -n ingress-nginx \
+  deployment/ingress-nginx-controller \
+  88:80 \
+  --address=127.0.0.1
+# Forward Ubuntu localhost port 88 to the Ingress Controller.
+# Keep this terminal open while accessing the websites.
+
+# Open another terminal to execute the following commands.
+
+curl -I http://127.0.0.1:88/ecom/
+# Test eCommerce through the Ingress Controller.
+
+curl -I http://127.0.0.1:88/shop/
+# Test Online Shopping through Ingress.
+
+curl -I http://127.0.0.1:88/boutique/
+# Test Desi Boutique through Ingress.
+
+curl -I http://127.0.0.1:88/pizza/
+# Test Pizza application through Ingress.
+
+# BROWSER URLS:
+#
+# http://localhost:88/ecom/
+# http://localhost:88/shop/
+# http://localhost:88/boutique/
+# http://localhost:88/pizza/
+
+
+# =====================================================================
+# 12. TEST ALL FOUR APPLICATIONS AUTOMATICALLY
+# =====================================================================
+
+for path in ecom shop boutique pizza; do
+  curl -sS --max-time 5 \
+    -o /dev/null \
+    -w "$path: HTTP %{http_code}\n" \
+    "http://127.0.0.1:88/$path/"
+done
+# Test all four routes and display their HTTP status codes.
+# HTTP 200 indicates the requested page was served successfully.
+# HTTP 000 means curl did not receive an HTTP response.
+
+
+# =====================================================================
+# 13. TEST AN APPLICATION SERVICE DIRECTLY
+# =====================================================================
+
+kubectl port-forward \
+  -n webapps \
+  svc/stateless-ecommerce \
+  8197:80
+# Bypass Ingress and forward directly to the eCommerce Service.
+
+# In another terminal:
+curl -I http://127.0.0.1:8197/ecom/
+# Check whether the Service works independently of Ingress.
+
+# WHY?
+# If the Service works but the Ingress URL fails,
+# troubleshoot the Ingress Controller or its forwarding path.
+
+
+# =====================================================================
+# 14. ALTERNATIVE INGRESS PORT FORWARD
+# =====================================================================
+
+kubectl port-forward \
+  -n ingress-nginx \
+  deployment/ingress-nginx-controller \
+  8188:80
+# Use port 8188 when port 88 is occupied or malfunctioning.
+
+# In another terminal:
+curl -I http://127.0.0.1:8188/ecom/
+# Verify Ingress connectivity using the alternative local port.
+
+
+# =====================================================================
+# 15. TROUBLESHOOT PORT 88
+# =====================================================================
+
+sudo ss -ltnp 'sport = :88'
+# Identify which process is listening on port 88.
+
+ps -ef | grep '[k]ubectl port-forward'
+# Find active kubectl port-forward processes.
+
+sudo fuser -k 88/tcp
+# Stop processes using port 88.
+# WARNING: This terminates any process bound to that port.
+
+sudo ss -ltnp 'sport = :88'
+# Verify that port 88 is available before restarting forwarding.
+
+
+# =====================================================================
+# 16. TROUBLESHOOT PODS
+# =====================================================================
+
+kubectl get pods -n webapps -o wide
+# Check Pod readiness, restarts, IPs, and node placement.
+
+kubectl describe pods -n webapps
+# Inspect Pod conditions, scheduling, and failure events.
+
+kubectl logs -n webapps deployment/stateless-ecommerce
+# View application logs from a Pod selected by the Deployment.
+
+kubectl logs -n webapps deployment/online-shopping
+# View Online Shopping logs.
+
+kubectl logs -n webapps deployment/desi-boutique
+# View Boutique logs.
+
+kubectl logs -n webapps deployment/pizza
+# View Pizza logs.
+
+kubectl get events -n webapps --sort-by=.lastTimestamp
+# Display recent Kubernetes events.
+
+# To inspect a specific failed Pod:
+kubectl logs -n webapps POD_NAME --previous
+# Read logs from the previous terminated container instance.
+# Replace POD_NAME with an actual Pod name.
+
+
+# =====================================================================
+# 17. TROUBLESHOOT NGINX INGRESS CONTROLLER
+# =====================================================================
+
+kubectl get pods -n ingress-nginx -o wide
+# Verify the controller Pod is running and ready.
+
+kubectl logs -n ingress-nginx \
+  deployment/ingress-nginx-controller \
+  --tail=100
+# Inspect recent Ingress Controller logs.
+
+kubectl describe deployment ingress-nginx-controller \
+  -n ingress-nginx
+# Inspect controller configuration and rollout events.
+
+kubectl get endpointslices -n ingress-nginx
+# Verify the controller Service has ready backend endpoints.
+
+kubectl describe ingress multi-webapps-ingress -n webapps
+# Check routing and backend configuration.
+
+kubectl get events -n ingress-nginx --sort-by=.lastTimestamp
+# Inspect recent Ingress Controller events.
+
+
+# =====================================================================
+# 18. SCALING APPLICATIONS
+# =====================================================================
+
+kubectl scale deployment/stateless-ecommerce \
+  --replicas=3 -n webapps
+# Temporarily scale eCommerce from two to three replicas.
+
+kubectl get pods -n webapps
+# Verify the additional Pod is created.
+
+kubectl scale deployment/stateless-ecommerce \
+  --replicas=2 -n webapps
+# Restore the original two-replica configuration.
+
+# WHY?
+# Kubernetes Deployments maintain the desired replica count.
+# Scaling increases or decreases the number of running Pods.
+# A later kubectl apply or GitOps reconciliation may restore
+# the replica count specified in the manifest.
+
+
+# =====================================================================
+# 19. ROLLING UPDATES
+# =====================================================================
+
+kubectl rollout status deployment/stateless-ecommerce -n webapps
+# Check whether the latest rollout completed successfully.
+
+kubectl rollout history deployment/stateless-ecommerce -n webapps
+# Display Deployment rollout revisions.
+
+kubectl rollout undo deployment/stateless-ecommerce -n webapps
+# Roll back to the previous Deployment revision.
+# Use only when a rollback is needed.
+
+# WHY?
+# Rolling updates replace Pods progressively to reduce downtime.
+
+
+# =====================================================================
+# 20. CHECK RESOURCE UTILIZATION
+# =====================================================================
+
+kubectl top nodes
+# Display node CPU and memory usage.
+# Requires Metrics Server.
+
+kubectl top pods -n webapps
+# Display application Pod CPU and memory usage.
+# Requires Metrics Server.
+
+kubectl describe node multi-webapps-worker
+# Inspect node resource requests, limits, and conditions.
+
+
+# =====================================================================
+# 21. DELETE APPLICATION RESOURCES
+# =====================================================================
+
+kubectl delete -f ingress.yaml
+# Delete the project Ingress resource.
+
+kubectl delete -f four-websites.yaml
+# Delete resources defined in the application manifest.
+# This may also delete the namespace if included in the YAML.
+
+helm uninstall ingress-nginx -n ingress-nginx
+# Remove the NGINX Ingress Helm release.
+
+# WARNING:
+# These commands delete Kubernetes resources.
+# Do not execute them when you want to keep the project running.
+
+
+# =====================================================================
+# 22. DELETE KIND CLUSTER
+# =====================================================================
+
+kind delete cluster --name multi-webapps
+# Delete the multi-webapps cluster and all resources inside it.
+
+kind get clusters
+# Verify which Kind clusters remain.
+
+# DELETE ALL KIND CLUSTERS (DESTRUCTIVE):
+kind get clusters | while read -r cluster; do
+  kind delete cluster --name "$cluster"
+done
+# Remove every Kind cluster accessible to the current Docker environment.
+# Does not delete project source code or GitHub repositories.
+
+
+# =====================================================================
+# 23. VERIFY DOCKER CLEANUP
+# =====================================================================
+
+docker ps -a
+# List Docker containers, including stopped containers.
+
+docker ps -a --filter "label=io.x-k8s.kind.cluster"
+# Check for remaining Kind node containers.
+
+docker images
+# Show locally stored Docker images.
+# Kind deletion does not automatically delete host Docker images.
+
+
+# =====================================================================
+# 24. GITHUB PROJECT COMMANDS
+# =====================================================================
+
+cd /home/adminx/Downloads/multi-webapps-k8s
+# Navigate to the Git repository.
+
+gh auth status
+# Verify GitHub authentication.
+
+git status
+# Check local changes.
+
+git remote -v
+# Verify the GitHub repository URL.
+
+git pull --rebase origin main
+# Integrate the latest remote changes before new commits.
+# Prefer running with a clean working tree.
+
+git add .
+# Stage changed project files.
+
+git diff --cached --stat
+# Review staged changes before committing.
+
+git commit -m "Update Multi-WebApps Kubernetes Ingress"
+# Save changes as a Git commit.
+
+git push origin main
+# Upload committed changes to GitHub.
+
+
+# =====================================================================
+# 25. IMPORTANT KUBERNETES CONCEPTS LEARNED
+# =====================================================================
+#
+# Docker:
+#   Packages each application into a container image.
+#
+# Kind:
+#   Creates local Kubernetes clusters using Docker containers.
+#
+# Kubernetes Node:
+#   Machine that runs Kubernetes workloads.
+#
+# Pod:
+#   Smallest deployable unit in Kubernetes.
+#
+# Deployment:
+#   Maintains replicas and performs rolling updates.
+#
+# Replica:
+#   Additional application instance for availability and scaling.
+#
+# ClusterIP Service:
+#   Provides stable internal access and distributes requests.
+#
+# EndpointSlice:
+#   Tracks backend Pod addresses used by Services.
+#
+# Namespace:
+#   Organizes Kubernetes resources logically.
+#
+# NGINX Ingress Controller:
+#   Implements HTTP routing rules for incoming traffic.
+#
+# Ingress Resource:
+#   Defines which URL path maps to which Kubernetes Service.
+#
+# Helm:
+#   Installs and manages packaged Kubernetes applications.
+#
+# Port Forwarding:
+#   Creates a temporary local connection to a Kubernetes workload.
+#
+# Rolling Update:
+#   Gradually replaces application Pods with a new version.
+#
+# Scaling:
+#   Changes the number of application replicas.
+#
+# Troubleshooting:
+#   Uses kubectl logs, describe, events, curl, and network checks.
+#
+# =====================================================================
+# PROJECT SUMMARY
+# =====================================================================
+#
+# Cluster:       multi-webapps
+# Nodes:         3
+# Applications:  4
+# Deployments:   4
+# Replicas:      2 per application
+# App Pods:      8
+# Services:      4
+# Ingress:       1 NGINX Ingress Controller
+# Web Servers:   NGINX + Apache
+# Routing:       HTTP path-based routing
+#
+# GitHub Repository:
+# https://github.com/harisamjad0158/multi-webapps-kubernetes-ingress
+#
+# =====================================================================
