@@ -1,0 +1,53 @@
+ServerRoot "/usr/local/apache2"
+
+Listen 8080
+ServerName localhost
+
+LoadModule mpm_event_module modules/mod_mpm_event.so
+LoadModule authz_core_module modules/mod_authz_core.so
+LoadModule unixd_module modules/mod_unixd.so
+LoadModule dir_module modules/mod_dir.so
+LoadModule mime_module modules/mod_mime.so
+LoadModule rewrite_module modules/mod_rewrite.so
+LoadModule headers_module modules/mod_headers.so
+LoadModule alias_module modules/mod_alias.so
+LoadModule log_config_module modules/mod_log_config.so
+
+TypesConfig conf/mime.types
+
+User daemon
+Group daemon
+
+PidFile "/tmp/httpd.pid"
+
+DocumentRoot "/usr/local/apache2/htdocs"
+
+<Directory "/usr/local/apache2/htdocs">
+    Options -Indexes +FollowSymLinks
+    AllowOverride None
+    Require all granted
+    DirectoryIndex index.html
+</Directory>
+
+# Redirect /shop to /shop/
+RedirectMatch 301 ^/shop$ /shop/
+
+# Serve the built React application under /shop/
+Alias /shop/ "/usr/local/apache2/htdocs/"
+
+# React client-side route fallback.
+# HashRouter normally does not require this, but it
+# allows non-file paths to return the application.
+RewriteEngine On
+
+RewriteCond %{REQUEST_URI} ^/shop/
+RewriteCond %{REQUEST_URI} !^/shop/assets/
+RewriteCond %{DOCUMENT_ROOT}/index.html -f
+RewriteRule ^/shop/.+ /shop/index.html [END]
+
+ErrorLog /proc/self/fd/2
+CustomLog /proc/self/fd/1 combined
+
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "DENY"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"

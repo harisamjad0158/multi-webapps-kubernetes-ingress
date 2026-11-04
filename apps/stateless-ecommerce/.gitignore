@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+.DS_Store
+node_modules/
+dist/
+build/
+*.pem
+*.key

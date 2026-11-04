@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: multi-webapps-ingress
+  namespace: webapps
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /ecom
+            pathType: Prefix
+            backend:
+              service:
+                name: stateless-ecommerce
+                port:
+                  number: 80
+
+          - path: /shop
+            pathType: Prefix
+            backend:
+              service:
+                name: online-shopping
+                port:
+                  number: 80
+
+          - path: /boutique
+            pathType: Prefix
+            backend:
+              service:
+                name: desi-boutique
+                port:
+                  number: 80
+
+          - path: /pizza
+            pathType: Prefix
+            backend:
+              service:
+                name: pizza
+                port:
+                  number: 80

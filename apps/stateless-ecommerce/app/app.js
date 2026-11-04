@@ -1,0 +1,23 @@
+'use strict';
+const products = [
+{id:1,name:'Ceramic Pour-Over',category:'Home',price:34,emoji:'☕',bg:'#e6d6c4',description:'Slow mornings start here.',tag:'BESTSELLER'},
+{id:2,name:'Everyday Tote',category:'Accessories',price:28,emoji:'👜',bg:'#e9dfd2',description:'Carry everything beautifully.',tag:'NEW'},
+{id:3,name:'Botanical Notebook',category:'Lifestyle',price:16,emoji:'📓',bg:'#dce5d8',description:'A home for bright ideas.'},
+{id:4,name:'Studio Headphones',category:'Tech',price:89,emoji:'🎧',bg:'#d9e0e3',description:'Sound worth slowing down for.',tag:'POPULAR'},
+{id:5,name:'Ambient Table Lamp',category:'Home',price:69,emoji:'💡',bg:'#e9dfce',description:'A softer kind of glow.'},
+{id:6,name:'Classic Wristwatch',category:'Accessories',price:120,emoji:'⌚',bg:'#e0e4db',description:'Time, thoughtfully made.'},
+{id:7,name:'Weekend Camera',category:'Tech',price:145,emoji:'📷',bg:'#e4d8d4',description:'Make the little moments last.'},
+{id:8,name:'Indoor Greenery',category:'Lifestyle',price:24,emoji:'🪴',bg:'#dce4d1',description:'A little life for every room.'}
+];
+const $ = id => document.getElementById(id);
+const cart = new Map(); // Intentionally in-memory: resets on refresh and is not shared across replicas.
+let category='All',query='';
+const money=n=>new Intl.NumberFormat('en-IE',{style:'currency',currency:'EUR'}).format(n);
+function renderProducts(){const matches=products.filter(p=>(category==='All'||p.category===category)&&`${p.name} ${p.description}`.toLowerCase().includes(query));$('grid').innerHTML=matches.map(p=>`<article class="product"><div class="product-visual" style="background:${p.bg}">${p.tag?`<span class="tag">${p.tag}</span>`:''}<span class="emoji" aria-hidden="true">${p.emoji}</span></div><div class="product-info"><small>${p.category}</small><h3>${p.name}</h3><p>${p.description}</p><div class="product-bottom"><strong>${money(p.price)}</strong><button class="add" data-add="${p.id}" aria-label="Add ${p.name} to bag">+</button></div></div></article>`).join('')||'<p class="empty">No products found. Try another search.</p>';}
+function renderFilters(){const categories=['All',...new Set(products.map(p=>p.category))];$('filters').innerHTML=categories.map(c=>`<button class="filter ${category===c?'active':''}" data-filter="${c}">${c}</button>`).join('');}
+function renderCart(){const count=[...cart.values()].reduce((a,b)=>a+b,0);$('cartCount').textContent=count;$('drawerCount').textContent=`(${count})`;$('subtotal').textContent=money([...cart].reduce((sum,[id,qty])=>sum+products.find(p=>p.id===id).price*qty,0));$('cartItems').innerHTML=count?[...cart].map(([id,qty])=>{const p=products.find(x=>x.id===id);return `<div class="cart-line"><div class="cart-emoji" style="background:${p.bg}">${p.emoji}</div><div class="cart-details"><h4>${p.name}</h4><p>${money(p.price)}</p><div class="qty"><button data-qty="${id}" data-delta="-1" aria-label="Decrease ${p.name}">−</button><span>${qty}</span><button data-qty="${id}" data-delta="1" aria-label="Increase ${p.name}">+</button></div></div><strong>${money(p.price*qty)}</strong></div>`}).join(''):'<p>Your bag is empty. Find something you love!</p>';}
+function notify(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(notify.timeout);notify.timeout=setTimeout(()=>el.classList.remove('show'),2200);}
+function openCart(open){$('drawer').classList.toggle('open',open);$('drawer').setAttribute('aria-hidden',String(!open));$('overlay').hidden=!open;}
+document.addEventListener('click',e=>{const add=e.target.closest('[data-add]');if(add){const id=Number(add.dataset.add);cart.set(id,(cart.get(id)||0)+1);renderCart();notify('Added to your bag');}const filter=e.target.closest('[data-filter]');if(filter){category=filter.dataset.filter;renderFilters();renderProducts();}const qty=e.target.closest('[data-qty]');if(qty){const id=Number(qty.dataset.qty),next=(cart.get(id)||0)+Number(qty.dataset.delta);if(next<=0)cart.delete(id);else cart.set(id,next);renderCart();}});
+$('search').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();renderProducts();});$('cartToggle').addEventListener('click',()=>openCart(true));$('closeCart').addEventListener('click',()=>openCart(false));$('overlay').addEventListener('click',()=>openCart(false));document.addEventListener('keydown',e=>{if(e.key==='Escape')openCart(false)});$('clearCart').addEventListener('click',()=>{cart.clear();renderCart();notify('Bag cleared')});$('checkout').addEventListener('click',()=>notify(cart.size?'Demo only — no payment is processed':'Your bag is empty'));
+renderFilters();renderProducts();renderCart();

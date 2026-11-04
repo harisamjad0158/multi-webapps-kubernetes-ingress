@@ -1,0 +1,196 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: webapps
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stateless-ecommerce
+  namespace: webapps
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stateless-ecommerce
+  template:
+    metadata:
+      labels:
+        app: stateless-ecommerce
+    spec:
+      containers:
+        - name: ecommerce
+          image: stateless-ecommerce:1.0.2
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stateless-ecommerce
+  namespace: webapps
+spec:
+  type: ClusterIP
+  selector:
+    app: stateless-ecommerce
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: online-shopping
+  namespace: webapps
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: online-shopping
+  template:
+    metadata:
+      labels:
+        app: online-shopping
+    spec:
+      containers:
+        - name: shopping
+          image: online-shopping-apache:1.0.4
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /shop/
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: online-shopping
+  namespace: webapps
+spec:
+  type: ClusterIP
+  selector:
+    app: online-shopping
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: desi-boutique
+  namespace: webapps
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: desi-boutique
+  template:
+    metadata:
+      labels:
+        app: desi-boutique
+    spec:
+      containers:
+        - name: boutique
+          image: desi-boutique-apache:1.0.1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /boutique/
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: desi-boutique
+  namespace: webapps
+spec:
+  type: ClusterIP
+  selector:
+    app: desi-boutique
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pizza
+  namespace: webapps
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pizza
+  template:
+    metadata:
+      labels:
+        app: pizza
+    spec:
+      containers:
+        - name: pizza
+          image: pizza-apache:1.0.1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /pizza/
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pizza
+  namespace: webapps
+spec:
+  type: ClusterIP
+  selector:
+    app: pizza
+  ports:
+    - port: 80
+      targetPort: 8080

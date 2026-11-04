@@ -1,0 +1,11 @@
+FROM httpd:2.4-alpine
+# Serve the static site with Apache HTTP Server on an unprivileged port.
+RUN sed -i 's/^Listen 80$/Listen 8080/' /usr/local/apache2/conf/httpd.conf \
+    && sed -i 's/^User daemon$/User www-data/' /usr/local/apache2/conf/httpd.conf \
+    && sed -i 's/^Group daemon$/Group www-data/' /usr/local/apache2/conf/httpd.conf \
+    && sed -i 's/^#ServerName www.example.com:80$/ServerName localhost:8080/' /usr/local/apache2/conf/httpd.conf \
+    && mkdir -p /usr/local/apache2/logs \
+    && chown -R www-data:www-data /usr/local/apache2/logs /usr/local/apache2/htdocs
+COPY --chown=www-data:www-data app/ /usr/local/apache2/htdocs/
+USER www-data
+EXPOSE 8080
