@@ -1,3 +1,4 @@
+<img width="1536" height="1024" alt="Multi-WebApps Kubernetes Ingress Architecture" src="https://github.com/user-attachments/assets/fca273da-eed8-4dd5-8ab2-0315f664930a" />
 # Multi-WebApps Kubernetes Ingress
 
 **Four independent web applications · Eight application replicas · Three-node Kind cluster · One NGINX Ingress entry point**
@@ -48,6 +49,7 @@ Application namespace: webapps
 **Request flow:** Client → local port-forward → Ingress Controller → path-matched ClusterIP Service → ready Pod endpoint → application web server.
 
 > The Ingress Controller is an additional infrastructure workload; the **eight Pods** count refers only to the four applications.
+> 
 
 ## 4. Technology stack
 
